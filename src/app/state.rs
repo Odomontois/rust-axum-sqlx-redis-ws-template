@@ -12,23 +12,27 @@ pub(crate) trait IsState: Unpin + Sized + Clone + Send + Sync + 'static {}
 impl<A: Clone + Send + Sync + Unpin + Sized + 'static> IsState for A {}
 
 #[cfg(test)]
-pub(crate) struct TestState<A>(pub(crate) Arc<A>);
+pub(crate) use test_state::{test_state, TestState};
 
 #[cfg(test)]
-pub(crate) fn test_state<A>(state: A) -> TestState<A> {
-    TestState(Arc::new(state))
-}
+mod test_state {
+    use std::sync::Arc;
 
-#[cfg(test)]
-impl<A> AsRef<Arc<A>> for TestState<A> {
-    fn as_ref(&self) -> &Arc<A> {
-        &self.0
+    pub(crate) struct TestState<A>(pub(crate) Arc<A>);
+
+    pub(crate) fn test_state<A>(state: A) -> TestState<A> {
+        TestState(Arc::new(state))
     }
-}
 
-#[cfg(test)]
-impl<A> Clone for TestState<A> {
-    fn clone(&self) -> Self {
-        Self(self.0.clone())
+    impl<A> AsRef<Arc<A>> for TestState<A> {
+        fn as_ref(&self) -> &Arc<A> {
+            &self.0
+        }
+    }
+
+    impl<A> Clone for TestState<A> {
+        fn clone(&self) -> Self {
+            Self(self.0.clone())
+        }
     }
 }
