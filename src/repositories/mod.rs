@@ -1,17 +1,10 @@
-use crate::db::postgres;
-use crate::repositories::{
-    part::{PartRepositoryImpl},
-    car::{CarRepositoryImpl},
-};
-use axum::extract::Extension;
-use std::sync::Arc;
 use crate::config::Config;
+use crate::db::postgres;
+use crate::repositories::{car::CarRepositoryImpl, part::PartRepositoryImpl};
+use std::sync::Arc;
 
-pub mod part;
 pub mod car;
-
-pub type CarRepoExt = Extension<Arc<CarRepositoryImpl>>;
-pub type PartRepoExt = Extension<Arc<PartRepositoryImpl>>;
+pub mod part;
 
 pub async fn run_migrations(config: &Config) {
     let db_pool = Arc::new(postgres::db_connect(config).await);

@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::app::{IsState, TestState};
+#[cfg(test)]
+use crate::app::state::TestState;
+use crate::app::{AppState, IsState};
 use crate::db::postgres::Db;
 use crate::models::car::{Car, CarList, CarQuery, NewCar};
 use anyhow::Result;
@@ -17,10 +19,18 @@ impl CarRepositoryImpl {
 }
 
 pub(crate) trait HasCarRepo: IsState {
-    type CarRepo: CarRepository;
+    type CarRepo: CarRepository + Send + Sync;
     fn car_repo(&self) -> Arc<Self::CarRepo>;
 }
 
+impl HasCarRepo for AppState {
+    type CarRepo = CarRepositoryImpl;
+    fn car_repo(&self) -> Arc<Self::CarRepo> {
+        self.car_repository.clone()
+    }
+}
+
+#[cfg(test)]
 impl<A: CarRepository + Send + Sync + 'static> HasCarRepo for TestState<A> {
     type CarRepo = A;
     fn car_repo(&self) -> Arc<Self::CarRepo> {
@@ -37,7 +47,7 @@ impl HasCarRepo for () {
 
 #[automock]
 #[async_trait]
-pub trait CarRepository: Send + Sync {
+pub trait CarRepository {
     async fn find_all(&self, conditions: &CarQuery) -> Result<CarList>;
     async fn create(&self, car_data: &NewCar) -> Result<Car>;
     async fn update(&self, car_data: &Car) -> Result<Car>;

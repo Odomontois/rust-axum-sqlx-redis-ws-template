@@ -1,11 +1,11 @@
+use crate::cache::CacheExt;
+use crate::error::{AppError, AppJson};
 use crate::models::part::{NewPart, Part, PartList, PartQuery};
-use crate::repositories::{PartRepoExt};
-use axum::{extract::Extension, Json};
-use axum::extract::{Path, Query};
-use crate::cache::{CacheExt};
+use crate::repositories::part::HasPartRepo;
 use crate::router::PARTS_TAG;
 use crate::services;
-use crate::error::{AppError, AppJson};
+use axum::extract::{Path, Query, State};
+use axum::{extract::Extension, Json};
 
 /// List all available Parts
 ///
@@ -16,8 +16,11 @@ use crate::error::{AppError, AppJson};
     responses((status = OK, body = [Part])),
     tag = PARTS_TAG
 )]
-pub async fn index(Query(conditions): Query<PartQuery>, Extension(repo): PartRepoExt) -> Result<AppJson<PartList>, AppError> {
-    let parts = services::parts::search(repo.clone(), &conditions).await?;
+pub async fn index<S: HasPartRepo>(
+    Query(conditions): Query<PartQuery>,
+    State(state): State<S>,
+) -> Result<AppJson<PartList>, AppError> {
+    let parts = services::parts::search(state.part_repo(), &conditions).await?;
     Ok(AppJson(parts))
 }
 
@@ -28,14 +31,16 @@ pub async fn index(Query(conditions): Query<PartQuery>, Extension(repo): PartRep
         post,
         path = "/create",
         tag = PARTS_TAG,
-        request_body(content=String, content_type="application/json", description="New Part Information"),
+        request_body(content=NewPart, content_type="application/json", description="New Part Information"),
         responses(
             (status = 201, description = "Part item created successfully", body = Part)
         )
 )]
-pub async fn create(Extension(repo): PartRepoExt,
-                    Json(new_part): Json<NewPart>) -> Result<AppJson<Part>, AppError> {
-    let part = services::parts::create(repo.clone(), &new_part).await?;
+pub async fn create<S: HasPartRepo>(
+    State(state): State<S>,
+    Json(new_part): Json<NewPart>,
+) -> Result<AppJson<Part>, AppError> {
+    let part = services::parts::create(state.part_repo(), &new_part).await?;
     Ok(AppJson(part))
 }
 
@@ -49,8 +54,12 @@ pub async fn create(Extension(repo): PartRepoExt,
     responses((status = OK, body = [Part])),
     tag = PARTS_TAG
 )]
-pub async fn view(Path(part_id): Path<i32>, Extension(repo): PartRepoExt, Extension(cache): CacheExt) -> Result<AppJson<Part>, AppError> {
-    let part = services::parts::view(repo.clone(), cache.clone(), part_id).await?;
+pub async fn view<S: HasPartRepo>(
+    Path(part_id): Path<i32>,
+    State(state): State<S>,
+    Extension(cache): CacheExt,
+) -> Result<AppJson<Part>, AppError> {
+    let part = services::parts::view(state.part_repo(), cache.clone(), part_id).await?;
     Ok(AppJson(part))
 }
 
@@ -64,8 +73,11 @@ pub async fn view(Path(part_id): Path<i32>, Extension(repo): PartRepoExt, Extens
     responses((status = OK, body = [Part])),
     tag = PARTS_TAG
 )]
-pub async fn search(Query(params): Query<PartQuery>, Extension(repo): PartRepoExt) -> Result<AppJson<PartList>, AppError> {
-    let parts = services::parts::search(repo.clone(), &params).await?;
+pub async fn search<S: HasPartRepo>(
+    Query(params): Query<PartQuery>,
+    State(state): State<S>,
+) -> Result<AppJson<PartList>, AppError> {
+    let parts = services::parts::search(state.part_repo(), &params).await?;
     Ok(AppJson(parts))
 }
 
@@ -81,9 +93,11 @@ pub async fn search(Query(params): Query<PartQuery>, Extension(repo): PartRepoEx
             (status = 200, description = "Part item updated successfully", body = Part)
         )
 )]
-pub async fn update(Extension(repo): PartRepoExt,
-                    Json(part): Json<Part>) -> Result<AppJson<Part>, AppError> {
-    let part = services::parts::update(repo.clone(), &part).await?;
+pub async fn update<S: HasPartRepo>(
+    State(state): State<S>,
+    Json(part): Json<Part>,
+) -> Result<AppJson<Part>, AppError> {
+    let part = services::parts::update(state.part_repo(), &part).await?;
     Ok(AppJson(part))
 }
 
@@ -99,7 +113,10 @@ pub async fn update(Extension(repo): PartRepoExt,
             (status = 200, description = "Part item deleted successfully", body = String)
         )
 )]
-pub async fn delete(Path(part_id): Path<i32>, Extension(repo): PartRepoExt) -> Result<(), AppError> {
-    services::parts::delete(repo.clone(), part_id).await?;
+pub async fn delete<S: HasPartRepo>(
+    Path(part_id): Path<i32>,
+    State(state): State<S>,
+) -> Result<(), AppError> {
+    services::parts::delete(state.part_repo(), part_id).await?;
     Ok(())
 }

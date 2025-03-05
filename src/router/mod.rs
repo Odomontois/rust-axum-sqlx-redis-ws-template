@@ -1,10 +1,9 @@
 use crate::{
-    app::{AppState, IsState},
     controllers::{
-        cars::{self, list},
+        cars::{self},
         parts, utils,
     },
-    repositories::car::HasCarRepo,
+    repositories::{car::HasCarRepo, part::HasPartRepo},
 };
 use axum::Router;
 use utoipa::OpenApi;
@@ -25,7 +24,7 @@ pub const PARTS_TAG: &str = "Parts";
     )
 )]
 struct ApiDoc;
-pub fn router<S: HasCarRepo + Unpin>() -> Router<S> {
+pub fn router<S: HasCarRepo + HasPartRepo>() -> Router<S> {
     let app: OpenApiRouter<S> = OpenApiRouter::new()
         .routes(routes!(utils::healthcheck))
         .nest("/cars", car_routes())
@@ -58,12 +57,12 @@ fn car_routes<S: HasCarRepo>() -> OpenApiRouter<S> {
         .routes(routes!(cars::delete::<S>))
 }
 
-fn part_routes<S: IsState>() -> OpenApiRouter<S> {
+fn part_routes<S: HasPartRepo>() -> OpenApiRouter<S> {
     OpenApiRouter::new()
-        .routes(routes!(parts::index))
-        .routes(routes!(parts::search))
-        .routes(routes!(parts::create))
-        .routes(routes!(parts::view))
-        .routes(routes!(parts::update))
-        .routes(routes!(parts::delete))
+        .routes(routes!(parts::index::<S>))
+        .routes(routes!(parts::search::<S>))
+        .routes(routes!(parts::create::<S>))
+        .routes(routes!(parts::view::<S>))
+        .routes(routes!(parts::update::<S>))
+        .routes(routes!(parts::delete::<S>))
 }

@@ -1,11 +1,8 @@
-use std::fmt::Debug;
-use std::sync::Arc;
 
 use crate::cache::CacheExt;
 use crate::error::{AppError, AppJson};
 use crate::models::car::{Car, CarList, CarQuery, NewCar};
 use crate::repositories::car::HasCarRepo;
-use crate::repositories::CarRepoExt;
 use crate::router::CARS_TAG;
 use crate::services;
 use axum::{
@@ -133,7 +130,7 @@ pub async fn delete<S: HasCarRepo>(
 #[cfg(test)]
 mod tests {
     use crate::app::state::TestState;
-    use crate::app::test_state;
+    use crate::app::state::test_state;
     use crate::config::Config;
     use crate::controllers::cars;
     use crate::models::car::{CarList, NewCar};
@@ -141,9 +138,8 @@ mod tests {
     use crate::repositories::{clear_database, create_car_repository, run_migrations};
     use axum::http::Request;
     use axum::routing::get;
-    use axum::{body::Body, http::StatusCode, Extension, Router};
+    use axum::{body::Body, http::StatusCode, Router};
     use once_cell::sync::Lazy;
-    use std::sync::Arc;
     use tower::ServiceExt;
 
     static INIT: Lazy<()> = Lazy::new(|| {
