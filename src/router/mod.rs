@@ -48,14 +48,14 @@ pub fn router<S: HasCarRepo + Unpin>() -> Router<S> {
     Router::new().nest("/", router)
 }
 
-fn car_routes<S: HasCarRepo + Sized + Unpin>() -> OpenApiRouter<S> {
+fn car_routes<S: HasCarRepo>() -> OpenApiRouter<S> {
     OpenApiRouter::<S>::new()
         .routes(routes!(cars::list::<S>))
         .routes(routes!(cars::search::<S>))
-        .routes(routes!(cars::create))
-        .routes(routes!(cars::view))
-        .routes(routes!(cars::update))
-        .routes(routes!(cars::delete))
+        .routes(routes!(cars::create::<S>))
+        .routes(routes!(cars::view::<S>))
+        .routes(routes!(cars::update::<S>))
+        .routes(routes!(cars::delete::<S>))
 }
 
 fn part_routes<S: IsState>() -> OpenApiRouter<S> {

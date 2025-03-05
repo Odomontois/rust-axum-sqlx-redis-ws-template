@@ -27,8 +27,7 @@ pub async fn list<S: HasCarRepo>(
     Query(conditions): Query<CarQuery>,
 ) -> Result<AppJson<CarList>, AppError> {
     let cars = services::cars::search(state.car_repo(), &conditions).await?;
-    // Ok(AppJson(cars))
-    Err(anyhow::format_err!("Not implemented"))?
+    Ok(AppJson(cars))
 }
 
 /// Search all cars
@@ -59,12 +58,12 @@ pub async fn search<S: HasCarRepo>(
     responses((status = OK, body = [Car])),
     tag = CARS_TAG
 )]
-pub async fn view(
+pub async fn view<S: HasCarRepo>(
     Path(car_id): Path<i32>,
-    Extension(repo): CarRepoExt,
+    State(state): State<S>,
     Extension(cache): CacheExt,
 ) -> Result<AppJson<Car>, AppError> {
-    let car = services::cars::view(repo.clone(), cache.clone(), car_id).await?;
+    let car = services::cars::view(state.car_repo(), cache.clone(), car_id).await?;
     Ok(AppJson(car))
 }
 
@@ -80,11 +79,11 @@ pub async fn view(
             (status = 201, description = "Car item created successfully", body = Car)
         )
 )]
-pub async fn create(
-    Extension(repo): CarRepoExt,
+pub async fn create<S: HasCarRepo>(
+    State(state): State<S>,
     Json(new_car): Json<NewCar>,
 ) -> Result<AppJson<Car>, AppError> {
-    let car = services::cars::create(repo.clone(), &new_car).await?;
+    let car = services::cars::create(state.car_repo(), &new_car).await?;
     Ok(AppJson(car))
 }
 
@@ -100,11 +99,11 @@ pub async fn create(
             (status = 200, description = "Car item updated successfully", body = Car)
         )
 )]
-pub async fn update(
-    Extension(repo): CarRepoExt,
+pub async fn update<S: HasCarRepo>(
+    State(state): State<S>,
     Json(car): Json<Car>,
 ) -> Result<AppJson<Car>, AppError> {
-    let car = services::cars::update(repo.clone(), &car).await?;
+    let car = services::cars::update(state.car_repo(), &car).await?;
     Ok(AppJson(car))
 }
 
@@ -120,8 +119,11 @@ pub async fn update(
             (status = 200, description = "Car item deleted successfully", body = String)
         )
 )]
-pub async fn delete(Path(car_id): Path<i32>, Extension(repo): CarRepoExt) -> Result<(), AppError> {
-    services::cars::delete(repo.clone(), car_id).await?;
+pub async fn delete<S: HasCarRepo>(
+    Path(car_id): Path<i32>,
+    State(state): State<S>,
+) -> Result<(), AppError> {
+    services::cars::delete(state.car_repo(), car_id).await?;
     Ok(())
 }
 
