@@ -1,5 +1,5 @@
 use crate::models::car::{NewCar, Car, CarQuery, CarList};
-use crate::repositories::{car::CarRepository};
+use crate::repositories::car::CarRepository;
 use std::sync::Arc;
 use anyhow::{bail, Result};
 use redis::AsyncCommands;
@@ -66,7 +66,7 @@ pub async fn delete<R: CarRepository>(repo: Arc<R>, car_id: i32) -> Result<u64> 
 mod tests {
     use crate::repositories::car::MockCarRepository;
     use super::*;
-    use crate::tests::{fixture::car::cars_fixture};
+    use crate::tests::fixture::car::cars_fixture;
 
     #[tokio::test]
     async fn test_search() {

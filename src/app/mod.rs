@@ -1,18 +1,25 @@
-use crate::repositories::{create_car_repository, create_part_repository, run_migrations};
-use crate::router::router;
-use axum::{Extension, Router};
-use std::sync::Arc;
-use axum::extract::{MatchedPath, Request};
-use tower_http::trace::TraceLayer;
-use tracing::{info_span};
+pub(crate) mod state;
+pub(crate) use state::{test_state, AppState, IsState, TestState};
+
 use crate::cache::create_cache;
 use crate::config::Config;
+use crate::repositories::{create_car_repository, create_part_repository, run_migrations};
+use crate::router::router;
+use axum::extract::{MatchedPath, Request};
+use axum::{Extension, Router};
+use std::sync::Arc;
+use tower_http::trace::TraceLayer;
+use tracing::info_span;
 
 pub async fn create_app(config: &Config) -> Router {
     let _ = run_migrations(config).await;
     let car_repository = Arc::new(create_car_repository(config).await);
     let part_repository = Arc::new(create_part_repository(config).await);
     let cache = Arc::new(create_cache(config).await);
+    let state = AppState {
+        car_repository,
+        part_repository,
+    };
     router()
         .layer(
             TraceLayer::new_for_http()
@@ -34,7 +41,6 @@ pub async fn create_app(config: &Config) -> Router {
                 // logging of errors so disable that
                 .on_failure(()),
         )
-        .layer(Extension(car_repository))
-        .layer(Extension(part_repository))
+        .with_state(state)
         .layer(Extension(cache))
 }

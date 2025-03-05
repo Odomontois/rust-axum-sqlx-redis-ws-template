@@ -1,12 +1,19 @@
-use crate::controllers::{utils, parts, cars};
+use crate::{
+    app::{AppState, IsState},
+    controllers::{
+        cars::{self, list},
+        parts, utils,
+    },
+    repositories::car::HasCarRepo,
+};
 use axum::Router;
 use utoipa::OpenApi;
 use utoipa_axum::router::OpenApiRouter;
 use utoipa_axum::routes;
 use utoipa_rapidoc::RapiDoc;
-use utoipa_swagger_ui::SwaggerUi;
 use utoipa_redoc::{Redoc, Servable};
 use utoipa_scalar::{Scalar, Servable as ScalarServable};
+use utoipa_swagger_ui::SwaggerUi;
 
 pub const CARS_TAG: &str = "Cars";
 pub const PARTS_TAG: &str = "Parts";
@@ -18,8 +25,8 @@ pub const PARTS_TAG: &str = "Parts";
     )
 )]
 struct ApiDoc;
-pub fn router() -> Router {
-    let app = OpenApiRouter::new()
+pub fn router<S: HasCarRepo + Unpin>() -> Router<S> {
+    let app: OpenApiRouter<S> = OpenApiRouter::new()
         .routes(routes!(utils::healthcheck))
         .nest("/cars", car_routes())
         .nest("/parts", part_routes());
@@ -27,6 +34,7 @@ pub fn router() -> Router {
     let (router, api) = OpenApiRouter::with_openapi(ApiDoc::openapi())
         .nest("/api", app)
         .split_for_parts();
+
     let router = router
         .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", api.clone()))
         .merge(Redoc::with_url("/redoc", api.clone()))
@@ -40,17 +48,17 @@ pub fn router() -> Router {
     Router::new().nest("/", router)
 }
 
-fn car_routes() -> OpenApiRouter {
-    OpenApiRouter::new()
-        .routes(routes!(cars::list))
-        .routes(routes!(cars::search))
+fn car_routes<S: HasCarRepo + Sized + Unpin>() -> OpenApiRouter<S> {
+    OpenApiRouter::<S>::new()
+        .routes(routes!(cars::list::<S>))
+        .routes(routes!(cars::search::<S>))
         .routes(routes!(cars::create))
         .routes(routes!(cars::view))
         .routes(routes!(cars::update))
         .routes(routes!(cars::delete))
 }
 
-fn part_routes() -> OpenApiRouter {
+fn part_routes<S: IsState>() -> OpenApiRouter<S> {
     OpenApiRouter::new()
         .routes(routes!(parts::index))
         .routes(routes!(parts::search))
