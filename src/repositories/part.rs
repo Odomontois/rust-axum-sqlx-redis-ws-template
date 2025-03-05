@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
+use crate::app::state::AppStateRef;
 #[cfg(test)]
 use crate::app::state::TestState;
-use crate::app::AppState;
 use crate::models::part::{NewPart, Part, PartList, PartQuery};
 use crate::{app::IsState, db::postgres::Db};
 use anyhow::Result;
@@ -24,7 +24,7 @@ pub(crate) trait HasPartRepo: IsState {
     fn part_repo(&self) -> Arc<Self::PartRepo>;
 }
 
-impl HasPartRepo for AppState {
+impl HasPartRepo for AppStateRef {
     type PartRepo = PartRepositoryImpl;
     fn part_repo(&self) -> Arc<Self::PartRepo> {
         self.part_repository.clone()

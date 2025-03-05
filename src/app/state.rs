@@ -2,15 +2,23 @@ use std::sync::Arc;
 
 use crate::repositories::{car::CarRepositoryImpl, part::PartRepositoryImpl};
 
-#[derive(Clone)]
+#[derive(Clone, Into)]
 pub(crate) struct AppState {
+    #[into]
     pub(crate) car_repository: Arc<CarRepositoryImpl>,
+    #[into]
     pub(crate) part_repository: Arc<PartRepositoryImpl>,
 }
+
+#[derive(From, Clone, Deref)]
+#[from(AppState)] 
+#[deref(forward)]
+pub(crate) struct AppStateRef(pub(crate) Arc<AppState>);
 
 pub(crate) trait IsState: Unpin + Sized + Clone + Send + Sync + 'static {}
 impl<A: Clone + Send + Sync + Unpin + Sized + 'static> IsState for A {}
 
+use derive_more::{Deref, From, Into};
 #[cfg(test)]
 pub(crate) use test_state::{test_state, TestState};
 

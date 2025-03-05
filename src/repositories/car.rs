@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
+use crate::app::state::AppStateRef;
 #[cfg(test)]
 use crate::app::state::TestState;
-use crate::app::{AppState, IsState};
+use crate::app::IsState;
 use crate::db::postgres::Db;
 use crate::models::car::{Car, CarList, CarQuery, NewCar};
 use anyhow::Result;
@@ -23,7 +24,7 @@ pub(crate) trait HasCarRepo: IsState {
     fn car_repo(&self) -> Arc<Self::CarRepo>;
 }
 
-impl HasCarRepo for AppState {
+impl HasCarRepo for AppStateRef {
     type CarRepo = CarRepositoryImpl;
     fn car_repo(&self) -> Arc<Self::CarRepo> {
         self.car_repository.clone()

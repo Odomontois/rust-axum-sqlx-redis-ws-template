@@ -1,7 +1,6 @@
 pub(crate) mod state;
+use state::AppStateRef;
 pub(crate) use state::{AppState, IsState};
-
-
 
 use crate::cache::create_cache;
 use crate::config::Config;
@@ -18,10 +17,11 @@ pub async fn create_app(config: &Config) -> Router {
     let car_repository = Arc::new(create_car_repository(config).await);
     let part_repository = Arc::new(create_part_repository(config).await);
     let cache = Arc::new(create_cache(config).await);
-    let state = AppState {
+    let state: AppStateRef = AppState {
         car_repository,
         part_repository,
-    };
+    }
+    .into();
     router()
         .layer(
             TraceLayer::new_for_http()
