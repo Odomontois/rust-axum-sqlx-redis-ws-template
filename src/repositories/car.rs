@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::sync::Arc;
 
 use crate::app::state::AppStateRef;
@@ -7,9 +8,9 @@ use crate::app::IsState;
 use crate::db::postgres::Db;
 use crate::models::car::{Car, CarList, CarQuery, NewCar};
 use anyhow::Result;
-use async_trait::async_trait;
 use mockall::automock;
 
+#[derive(Clone)]
 pub struct CarRepositoryImpl {
     pool: Db,
 }
@@ -47,16 +48,14 @@ impl HasCarRepo for () {
 }
 
 #[automock]
-#[async_trait]
-pub trait CarRepository {
-    async fn find_all(&self, conditions: &CarQuery) -> Result<CarList>;
-    async fn create(&self, car_data: &NewCar) -> Result<Car>;
-    async fn update(&self, car_data: &Car) -> Result<Car>;
-    async fn delete(&self, car_id: i32) -> Result<u64>;
-    async fn find_by_id(&self, car_id: i32) -> Result<Car>;
+pub trait CarRepository: Send + Sync + 'static {
+    fn find_all(&self, conditions: &CarQuery) -> impl Future<Output = Result<CarList>> + Send;
+    fn create(&self, car_data: &NewCar) -> impl Future<Output = Result<Car>> + Send;
+    fn update(&self, car_data: &Car) -> impl Future<Output = Result<Car>> + Send;
+    fn delete(&self, car_id: i32) -> impl Future<Output = Result<u64>> + Send;
+    fn find_by_id(&self, car_id: i32) -> impl Future<Output = Result<Car>> + Send;
 }
 
-#[async_trait]
 impl CarRepository for CarRepositoryImpl {
     async fn find_all(&self, conditions: &CarQuery) -> Result<CarList> {
         let mut query = sqlx::query_as::<_, Car>("SELECT * FROM cars");
@@ -121,6 +120,9 @@ impl CarRepository for CarRepositoryImpl {
 
 #[cfg(test)]
 mod tests {
+
+    use crate::services::mock_result;
+
     use super::*;
     use mockall::predicate;
     #[tokio::test]
@@ -148,7 +150,7 @@ mod tests {
             .expect_find_all()
             .with(predicate::eq(conditions.clone()))
             .times(1)
-            .returning(move |_| Ok(expected_cars.clone()));
+            .returning(move |_| mock_result(expected_cars.clone()));
 
         let result = mock_repo.find_all(&conditions).await;
         assert!(result.is_ok());

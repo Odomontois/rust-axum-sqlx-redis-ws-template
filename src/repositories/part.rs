@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::sync::Arc;
 
 use crate::app::state::AppStateRef;
@@ -6,7 +7,6 @@ use crate::app::state::TestState;
 use crate::models::part::{NewPart, Part, PartList, PartQuery};
 use crate::{app::IsState, db::postgres::Db};
 use anyhow::Result;
-use async_trait::async_trait;
 use mockall::automock;
 
 pub struct PartRepositoryImpl {
@@ -47,16 +47,14 @@ impl HasPartRepo for () {
 }
 
 #[automock]
-#[async_trait]
 pub trait PartRepository {
-    async fn find_all(&self, conditions: &PartQuery) -> Result<PartList>;
-    async fn create(&self, part_data: &NewPart) -> Result<Part>;
-    async fn update(&self, part_data: &Part) -> Result<Part>;
-    async fn delete(&self, part_id: i32) -> Result<u64>;
-    async fn find_by_id(&self, part_id: i32) -> Result<Part>;
+    fn find_all(&self, conditions: &PartQuery) -> impl Future<Output = Result<PartList>> + Send;
+    fn create(&self, part_data: &NewPart) -> impl Future<Output = Result<Part>> + Send;
+    fn update(&self, part_data: &Part) -> impl Future<Output = Result<Part>> + Send;
+    fn delete(&self, part_id: i32) -> impl Future<Output = Result<u64>> + Send;
+    fn find_by_id(&self, part_id: i32) -> impl Future<Output = Result<Part>> + Send;
 }
 
-#[async_trait]
 impl PartRepository for PartRepositoryImpl {
     async fn find_all(&self, conditions: &PartQuery) -> Result<PartList> {
         let mut query = sqlx::query_as::<_, Part>("SELECT * FROM parts");
